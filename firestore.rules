@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (
+        request.auth.token.email_verified == true ||
+        request.auth.token.firebase.sign_in_provider == 'google.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for User entity
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'email']) &&
+        data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid &&
+        data.email is string && data.email.size() <= 256 &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024)) &&
+        (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Validation for Trip entity
+    function isValidTrip(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'destination', 'startDate', 'endDate', 'durationDays', 'travelersCount']) &&
+        data.id is string && isValidId(data.id) &&
+        data.userId is string && data.userId == request.auth.uid &&
+        data.title is string && data.title.size() <= 200 &&
+        data.destination is string && data.destination.size() <= 200 &&
+        data.startDate is string && data.startDate.size() <= 20 &&
+        data.endDate is string && data.endDate.size() <= 20 &&
+        data.durationDays is number && data.durationDays >= 1 && data.durationDays <= 365 &&
+        data.travelersCount is number && data.travelersCount >= 1 && data.travelersCount <= 100 &&
+        (!('travelStyle' in data) || (data.travelStyle is string && data.travelStyle.size() <= 50)) &&
+        (!('budgetTier' in data) || (data.budgetTier is string && data.budgetTier.size() <= 50)) &&
+        (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
+        (!('maxBudget' in data) || (data.maxBudget is number)) &&
+        (!('estimatedCost' in data) || (data.estimatedCost is number)) &&
+        (!('accommodationPreference' in data) || (data.accommodationPreference is string && data.accommodationPreference.size() <= 100)) &&
+        (!('foodPreference' in data) || (data.foodPreference is string && data.foodPreference.size() <= 100)) &&
+        (!('transportationPreference' in data) || (data.transportationPreference is string && data.transportationPreference.size() <= 100)) &&
+        (!('additionalRequirements' in data) || (data.additionalRequirements is string && data.additionalRequirements.size() <= 2000)) &&
+        (!('status' in data) || (data.status is string && data.status.size() <= 50)) &&
+        (!('isSaved' in data) || (data.isSaved is bool)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Users Collection: Private, each user can only read and write their own document
+    match /users/{userId} {
+      allow get: if isVerified() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false; // Users cannot list other users
+      allow create: if isVerified() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isVerified() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isVerified() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    // Trips Collection: Users can manage their own trips only
+    match /trips/{tripId} {
+      allow get: if isVerified() && isValidId(tripId) && existing().userId == request.auth.uid;
+      // Secure list query: strictly requires client query where userId == request.auth.uid
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+      allow create: if isVerified() && isValidId(tripId) && incoming().userId == request.auth.uid && isValidTrip(incoming());
+      allow update: if isVerified() && isValidId(tripId) && existing().userId == request.auth.uid && incoming().userId == request.auth.uid && isValidTrip(incoming());
+      allow delete: if isVerified() && isValidId(tripId) && existing().userId == request.auth.uid;
+    }
+  }
+}

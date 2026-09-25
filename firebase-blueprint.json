@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile information stored at /users/{userId}",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching document ID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 128
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar URL",
+          "maxLength": 1024
+        },
+        "currency": {
+          "type": "string",
+          "description": "Preferred display currency (e.g. USD, EUR, GBP)",
+          "maxLength": 10
+        },
+        "bio": {
+          "type": "string",
+          "description": "User short bio or travel bio",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update",
+          "maxLength": 64
+        }
+      },
+      "required": ["userId", "email"]
+    },
+    "Trip": {
+      "title": "Trip Itinerary",
+      "description": "A comprehensive travel trip itinerary stored at /trips/{tripId}",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique trip ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID",
+          "maxLength": 128
+        },
+        "title": {
+          "type": "string",
+          "description": "Trip title (e.g. '7 Days in Tokyo & Kyoto')",
+          "maxLength": 200
+        },
+        "destination": {
+          "type": "string",
+          "description": "Primary city and country destination",
+          "maxLength": 200
+        },
+        "destinationDetails": {
+          "type": "object",
+          "description": "Details about destination including coordinates and country"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Trip start date (YYYY-MM-DD)",
+          "maxLength": 20
+        },
+        "endDate": {
+          "type": "string",
+          "description": "Trip end date (YYYY-MM-DD)",
+          "maxLength": 20
+        },
+        "durationDays": {
+          "type": "number",
+          "description": "Total duration in days"
+        },
+        "travelersCount": {
+          "type": "number",
+          "description": "Number of travelers"
+        },
+        "travelStyle": {
+          "type": "string",
+          "description": "Style of travel (e.g. Balanced, Fast-paced, Relaxed, Luxury, Backpacking)",
+          "maxLength": 50
+        },
+        "budgetTier": {
+          "type": "string",
+          "description": "Budget level (Budget, Moderate, Luxury)",
+          "maxLength": 50
+        },
+        "maxBudget": {
+          "type": "number",
+          "description": "Total maximum allocated budget"
+        },
+        "estimatedCost": {
+          "type": "number",
+          "description": "Total estimated cost from AI calculations"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code (USD, EUR, etc.)",
+          "maxLength": 10
+        },
+        "interests": {
+          "type": "array",
+          "description": "Traveler interests"
+        },
+        "accommodationPreference": {
+          "type": "string",
+          "description": "Hostel, Hotel, Boutique, Resort, Rental",
+          "maxLength": 100
+        },
+        "foodPreference": {
+          "type": "string",
+          "description": "Street food, Local casual, Fine dining, Vegan/Vegetarian",
+          "maxLength": 100
+        },
+        "transportationPreference": {
+          "type": "string",
+          "description": "Public transit, Walking, Rental car, Ride-share",
+          "maxLength": 100
+        },
+        "additionalRequirements": {
+          "type": "string",
+          "description": "Custom notes or requirements",
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "description": "Status: draft, planned, completed, cancelled",
+          "maxLength": 50
+        },
+        "isSaved": {
+          "type": "boolean",
+          "description": "Whether trip is marked as saved/favorited"
+        },
+        "overview": {
+          "type": "object",
+          "description": "Overview summary, recommended style, tips"
+        },
+        "budgetBreakdown": {
+          "type": "object",
+          "description": "Detailed category breakdowns and totals"
+        },
+        "days": {
+          "type": "array",
+          "description": "Day-by-day itinerary schedule"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of creation",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last modification",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "userId", "title", "destination", "startDate", "endDate", "durationDays", "travelersCount"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "User profile collection isolated per authenticated user"
+    },
+    "/trips/{tripId}": {
+      "schema": {
+        "$ref": "#/entities/Trip"
+      },
+      "description": "Trips collection owned and managed by authenticated users"
+    }
+  }
+}

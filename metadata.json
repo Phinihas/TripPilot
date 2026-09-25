@@ -1,0 +1,6 @@
+{
+  "name": "TripPilot AI",
+  "description": "Commercial-grade AI travel planning SaaS that generates realistic, personalized day-by-day itineraries, detailed budget breakdowns, and seamless trip management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
