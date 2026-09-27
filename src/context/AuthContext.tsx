@@ -24,6 +24,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserPreferences: (data: Partial<UserProfile>) => Promise<void>;
+  signInAsDemoUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -113,8 +114,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await sendPasswordResetEmail(auth, email.trim());
   };
 
+  const setDemoFallbackUser = () => {
+    const dummyUser = {
+      uid: 'demo_traveler_guest',
+      email: 'traveler.demo@trippilot.ai',
+      displayName: 'Alex Rivers (Demo)',
+      photoURL: '',
+      emailVerified: true,
+      isAnonymous: false,
+    } as unknown as User;
+    setCurrentUser(dummyUser);
+    setUserProfile({
+      userId: 'demo_traveler_guest',
+      email: 'traveler.demo@trippilot.ai',
+      displayName: 'Alex Rivers (Demo)',
+      photoURL: '',
+      currency: 'INR',
+      preferredStyle: 'Balanced',
+      bio: 'Demo globetrotter exploring TripPilot AI.',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const signInAsDemoUser = async () => {
+    const demoEmail = 'traveler.demo@trippilot.ai';
+    const demoPass = 'TripPilotDemo2026!';
+    try {
+      await signInWithEmailAndPassword(auth, demoEmail, demoPass);
+    } catch (firstErr: any) {
+      if (firstErr.code === 'auth/user-not-found' || firstErr.code === 'auth/invalid-credential') {
+        try {
+          await createUserWithEmailAndPassword(auth, demoEmail, demoPass);
+        } catch {
+          setDemoFallbackUser();
+        }
+      } else {
+        setDemoFallbackUser();
+      }
+    }
+  };
+
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Sign out warning:', err);
+    }
     setCurrentUser(null);
     setUserProfile(null);
   };
@@ -143,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetPassword,
         logout,
         updateUserPreferences,
+        signInAsDemoUser,
       }}
     >
       {children}

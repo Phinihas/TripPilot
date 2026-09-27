@@ -73,6 +73,15 @@
           "description": "Primary city and country destination",
           "maxLength": 200
         },
+        "startLocation": {
+          "type": "string",
+          "description": "Origin city where the trip starts",
+          "maxLength": 200
+        },
+        "travelRoute": {
+          "type": "object",
+          "description": "Calculated route metrics, coordinates, and transport options"
+        },
         "destinationDetails": {
           "type": "object",
           "description": "Details about destination including coordinates and country"

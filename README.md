@@ -493,6 +493,14 @@ The application gracefully falls back to its built-in intelligent itinerary engi
 #### Q3: Does the app track my GPS location?
 No. Location permission is requested only once to identify your closest transit hub, strictly when you click "Use My Location". No continuous location tracking occurs.
 
+#### Q4: How do I fix "Firebase: Error (auth/unauthorized-domain)" on Vercel or custom domains?
+When deploying to Vercel (e.g. `trip-pilot-roan.vercel.app`) or a custom domain, Firebase Google OAuth requires the domain to be listed in the Authorized Domains list:
+1. Open the **[Firebase Console Authentication Settings](https://console.firebase.google.com/project/gen-lang-client-0253233259/authentication/settings)**.
+2. In the **Authorized domains** card, click **Add domain**.
+3. Enter your domain (e.g. `trip-pilot-roan.vercel.app`) and click **Save**.
+4. In the meantime, users can immediately sign in with **Email & Password** or the **1-Click Demo Account**, which do not require domain authorization.
+
+
 ---
 
 ## 👤 Author & Attribution

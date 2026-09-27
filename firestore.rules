@@ -54,6 +54,13 @@ service cloud.firestore {
         data.endDate is string && data.endDate.size() <= 20 &&
         data.durationDays is number && data.durationDays >= 1 && data.durationDays <= 365 &&
         data.travelersCount is number && data.travelersCount >= 1 && data.travelersCount <= 100 &&
+        (!('startLocation' in data) || (data.startLocation is string && data.startLocation.size() <= 200)) &&
+        (!('travelRoute' in data) || (data.travelRoute is map)) &&
+        (!('destinationDetails' in data) || (data.destinationDetails is map)) &&
+        (!('overview' in data) || (data.overview is map)) &&
+        (!('budgetBreakdown' in data) || (data.budgetBreakdown is map)) &&
+        (!('days' in data) || (data.days is list)) &&
+        (!('interests' in data) || (data.interests is list)) &&
         (!('travelStyle' in data) || (data.travelStyle is string && data.travelStyle.size() <= 50)) &&
         (!('budgetTier' in data) || (data.budgetTier is string && data.budgetTier.size() <= 50)) &&
         (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&

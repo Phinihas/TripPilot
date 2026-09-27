@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import {
+  X,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  Sparkles,
+  Loader2,
+  ShieldAlert,
+  Copy,
+  Check,
+  ExternalLink,
+  Info
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../common/Toast';
 
@@ -16,8 +29,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState(false);
 
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, signInAsDemoUser } = useAuth();
   const { showToast } = useToast();
 
   if (!isOpen) return null;
@@ -25,6 +40,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setUnauthorizedDomain(null);
     setLoading(true);
 
     try {
@@ -68,6 +84,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
   const handleGoogleSignIn = async () => {
     setErrorMsg('');
+    setUnauthorizedDomain(null);
     setLoading(true);
     try {
       await signInWithGoogle();
@@ -76,7 +93,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     } catch (err: any) {
       console.error('Google Sign In error:', err);
       if (err.code !== 'auth/popup-closed-by-user') {
-        setErrorMsg(err.message || 'Google sign-in could not be completed.');
+        const isUnauthorized =
+          err.code === 'auth/unauthorized-domain' ||
+          err.message?.toLowerCase().includes('unauthorized-domain') ||
+          err.message?.toLowerCase().includes('not authorized for oauth operations');
+
+        if (isUnauthorized) {
+          const currentHost = typeof window !== 'undefined' && window.location.hostname
+            ? window.location.hostname
+            : 'trip-pilot-roan.vercel.app';
+          setUnauthorizedDomain(currentHost);
+        } else {
+          setErrorMsg(err.message || 'Google sign-in could not be completed.');
+        }
       }
     } finally {
       setLoading(false);
@@ -85,25 +114,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
   const handleDemoSignIn = async () => {
     setErrorMsg('');
+    setUnauthorizedDomain(null);
     setLoading(true);
     try {
-      // Use standard demo traveler credentials or create if not present
-      const demoEmail = 'traveler.demo@trippilot.ai';
-      const demoPass = 'TripPilotDemo2026!';
-      try {
-        await signInWithEmail(demoEmail, demoPass);
-      } catch (firstErr: any) {
-        if (firstErr.code === 'auth/user-not-found' || firstErr.code === 'auth/invalid-credential') {
-          await signUpWithEmail(demoEmail, demoPass, 'Alex Rivers (Demo)');
-        } else {
-          throw firstErr;
-        }
-      }
+      await signInAsDemoUser();
       showToast('Demo Account Active', 'Signed in as Alex Rivers with full SaaS access.', 'success');
       onClose();
     } catch (err: any) {
       console.error('Demo login error:', err);
-      // Fallback
       showToast('Welcome Guest Traveler', 'Ready to plan your trips.', 'success');
       onClose();
     } finally {
@@ -144,7 +162,85 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
           </button>
         </div>
 
-        {errorMsg && (
+        {/* Unauthorized Domain Explainer Banner */}
+        {unauthorizedDomain && (
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 text-slate-800 dark:text-amber-100 text-xs space-y-3 animate-fade-in shadow-xs">
+            <div className="flex items-start gap-2.5">
+              <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                  Domain Not Authorized in Firebase
+                </h4>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">
+                  Firebase requires domains hosting this application to be added to <strong>Authorized Domains</strong> before Google Sign-In can work.
+                </p>
+              </div>
+            </div>
+
+            {/* Hostname Copy Block */}
+            <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700/60 gap-2">
+              <code className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                {unauthorizedDomain}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(unauthorizedDomain);
+                  setCopiedDomain(true);
+                  setTimeout(() => setCopiedDomain(false), 2000);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 text-[11px] font-semibold transition shrink-0"
+              >
+                {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedDomain ? 'Copied' : 'Copy'}</span>
+              </button>
+            </div>
+
+            {/* Steps to resolve */}
+            <div className="pt-1 border-t border-amber-200 dark:border-amber-800/40 text-[11px] space-y-1 text-slate-600 dark:text-slate-300">
+              <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-white">
+                <span>Add in 2 clicks:</span>
+                <a
+                  href="https://console.firebase.google.com/project/gen-lang-client-0253233259/authentication/settings"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-bold"
+                >
+                  <span>Firebase Console Settings</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <ol className="list-decimal list-inside space-y-0.5 text-slate-500 dark:text-slate-400 text-[10px]">
+                <li>Open <strong>Firebase Console Settings</strong> above</li>
+                <li>Under <strong>Authorized domains</strong>, click <strong>Add domain</strong></li>
+                <li>Paste <strong>{unauthorizedDomain}</strong> and click Save</li>
+              </ol>
+            </div>
+
+            {/* Instant Bypass Buttons */}
+            <div className="pt-2 border-t border-amber-200 dark:border-amber-800/40 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={handleDemoSignIn}
+                className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs text-center transition shadow-xs"
+              >
+                Use 1-Click Demo Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUnauthorizedDomain(null);
+                  setMode('login');
+                }}
+                className="py-1.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-xs text-center hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              >
+                Sign In with Email
+              </button>
+            </div>
+          </div>
+        )}
+
+        {errorMsg && !unauthorizedDomain && (
           <div className="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs text-rose-700 dark:text-rose-300">
             {errorMsg}
           </div>
